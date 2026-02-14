@@ -157,7 +157,7 @@ function sortList(flag) {
     }
 
     if (cmp1 < 0) {
-        str = "Matchup #" + (numQuestion - 1) + "<br>100% sorted.";
+        str = "Batalha #" + (numQuestion - 1) + "<br>100% finalizada.";
         document.getElementById("matchupNumber").innerHTML = str;
         document.getElementById("progressBar").style.display = "none";
         document.getElementById("leftField").style.display = "none";
@@ -183,7 +183,7 @@ function showImage() {
     bar.style.width = completionPercentage + "%";
     bar.innerHTML = "";
 
-    var str0 = "Matchup #" + numQuestion + "<br>" + completionPercentage + "% sorted.";
+    var str0 = "Batalha #" + numQuestion + "<br>" + completionPercentage + "% finalizada.";
     
     var str1 = namMember[lstMember[cmp1][head1]].split("|")[0];
     var str2 = "<br><span style='font-size:18px; font-weight:bold;'>" + namMember[lstMember[cmp1][head1]].split("|")[1] + "</span>";
@@ -206,10 +206,7 @@ function generateCanvasPoster() {
     var overlay = document.getElementById('loadingOverlay');
     overlay.style.display = 'flex';
 
-    var processedNamMember = namMember.map(item => 
-        item.replace("New England", "N.E.")
-            .replace("Vancouver Whitecaps FC", "Van. Whitecaps")
-    );
+    var processedNamMember = namMember;
 
     var colors = [
         "#00ff57", "#3ef846", "#56f034", "#67e91d", "#75e200", "#80da00", "#89d300", 
@@ -245,15 +242,18 @@ function generateCanvasPoster() {
     ctx.font = "32px MLS, sans-serif"; // Tries to use MLS font, falls back to sans
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("2026 MLS KIT RANKINGS", canvasWidth / 2, padding + (headerHeight / 2) - 10);
+    ctx.fillText("2025 BRASILEIRÃO - Batalha de uniformes", canvasWidth / 2, padding + (headerHeight / 2) - 10);
 
     // HELPER: Load Image Promise
     function loadImage(src) {
         return new Promise((resolve, reject) => {
             var img = new Image();
-            img.crossOrigin = "Anonymous"; 
+            // Only set crossOrigin for HTTP/HTTPS, not for file:// protocol
+            if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+                img.crossOrigin = "Anonymous"; 
+            }
             img.onload = () => resolve(img);
-            img.onerror = () => reject(new Error("Failed to load " + src));
+            img.onerror = () => reject(new Error("Falha ao carregar " + src));
             img.src = src;
         });
     }
@@ -361,17 +361,22 @@ function generateCanvasPoster() {
 
     // Execute all draws then show result
     Promise.all(tasks).then(() => {
-        var dataUrl = canvas.toDataURL("image/png");
         overlay.style.display = 'none';
-        showModal(dataUrl);
+        // For file:// protocol, display canvas directly (toDataURL is blocked)
+        if (window.location.protocol === 'file:') {
+            showModal(null, canvas);
+        } else {
+            var dataUrl = canvas.toDataURL("image/png");
+            showModal(dataUrl, null);
+        }
     }).catch(err => {
         console.error(err);
         overlay.style.display = 'none';
-        alert("Error generating image.");
+        alert("Erro ao gerar imagem.");
     });
 }
 
-function showModal(dataUrl) {
+function showModal(dataUrl, canvasElement) {
     var modal = document.createElement('div');
     modal.style.position = 'fixed';
     modal.style.zIndex = '100000'; 
@@ -385,18 +390,30 @@ function showModal(dataUrl) {
     modal.style.justifyContent = 'center';
     modal.style.flexDirection = 'column';
     
-    var img = new Image();
-    img.src = dataUrl;
+    var displayElement;
     
-    // Fit to screen visually, but source is high-res
-    img.style.maxWidth = '95%';
-    img.style.maxHeight = '80vh'; 
-    img.style.objectFit = 'contain'; 
-    img.style.boxShadow = '0 0 20px rgba(0,0,0,0.5)';
-    img.style.borderRadius = '4px';
+    if (canvasElement) {
+        // Display canvas directly for file:// protocol
+        displayElement = canvasElement;
+        displayElement.style.maxWidth = '95%';
+        displayElement.style.maxHeight = '80vh';
+        displayElement.style.objectFit = 'contain';
+        displayElement.style.boxShadow = '0 0 20px rgba(0,0,0,0.5)';
+        displayElement.style.borderRadius = '4px';
+    } else {
+        // Display as image for HTTP/HTTPS
+        var img = new Image();
+        img.src = dataUrl;
+        displayElement = img;
+        img.style.maxWidth = '95%';
+        img.style.maxHeight = '80vh'; 
+        img.style.objectFit = 'contain'; 
+        img.style.boxShadow = '0 0 20px rgba(0,0,0,0.5)';
+        img.style.borderRadius = '4px';
+    }
 
     var txt = document.createElement('div');
-    txt.innerHTML = "Right click (or long press) to save.<br>Click anywhere to close.";
+    txt.innerHTML = "Clique com o botão direito (ou toque longo) para salvar.<br>Recarregue a página para reiniciar.";
     txt.style.color = "#fff";
     txt.style.fontFamily = "sans-serif";
     txt.style.textAlign = "center";
@@ -404,9 +421,8 @@ function showModal(dataUrl) {
     txt.style.fontSize = "14px";
 
     modal.appendChild(txt);
-    modal.appendChild(img);
+    modal.appendChild(displayElement);
     
-    modal.onclick = function() { document.body.removeChild(modal); };
     document.body.appendChild(modal);
 }
 
