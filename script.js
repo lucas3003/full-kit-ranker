@@ -226,7 +226,8 @@ function generateCanvasPoster() {
     var headerHeight = 60;
     
     var canvasWidth = (cols * cardWidth) + ((cols - 1) * gap) + (padding * 2);
-    var canvasHeight = headerHeight + (rows * cardHeight) + ((rows - 1) * gap) + (padding * 2);
+    var footerHeight = 30; // Space for credit text
+    var canvasHeight = headerHeight + (rows * cardHeight) + ((rows - 1) * gap) + (padding * 2) + footerHeight;
 
     var canvas = document.createElement('canvas');
     canvas.width = canvasWidth;
@@ -359,6 +360,13 @@ function generateCanvasPoster() {
 
     // Execute all draws then show result
     Promise.all(tasks).then(() => {
+        // Draw credit at the bottom
+        ctx.fillStyle = "#666666";
+        ctx.font = "10px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("Imagens: www.footballkitarchive.com", canvasWidth / 2, canvasHeight - 10);
+        
         overlay.style.display = 'none';
         // Always display canvas directly - toDataURL fails with cross-origin images
         // even when crossOrigin is not set, due to browser security restrictions
