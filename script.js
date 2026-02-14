@@ -248,10 +248,8 @@ function generateCanvasPoster() {
     function loadImage(src) {
         return new Promise((resolve, reject) => {
             var img = new Image();
-            // Only set crossOrigin for HTTP/HTTPS, not for file:// protocol
-            if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-                img.crossOrigin = "Anonymous"; 
-            }
+            // Don't set crossOrigin - the CDN doesn't support CORS headers
+            // This means we'll need to display canvas directly instead of using toDataURL
             img.onload = () => resolve(img);
             img.onerror = () => reject(new Error("Falha ao carregar " + src));
             img.src = src;
@@ -362,13 +360,9 @@ function generateCanvasPoster() {
     // Execute all draws then show result
     Promise.all(tasks).then(() => {
         overlay.style.display = 'none';
-        // For file:// protocol, display canvas directly (toDataURL is blocked)
-        if (window.location.protocol === 'file:') {
-            showModal(null, canvas);
-        } else {
-            var dataUrl = canvas.toDataURL("image/png");
-            showModal(dataUrl, null);
-        }
+        // Always display canvas directly - toDataURL fails with cross-origin images
+        // even when crossOrigin is not set, due to browser security restrictions
+        showModal(null, canvas);
     }).catch(err => {
         console.error(err);
         overlay.style.display = 'none';
